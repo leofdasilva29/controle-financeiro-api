@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Rotas da API
-app.use(usuarioRoutes);
+app.use('/usuarios', usuarioRoutes);
 
 // Rota raiz de teste
 app.get('/', (req, res) => {
