@@ -13,10 +13,17 @@ export const listarUsuarios = async (req: Request, res: Response) => {
   try {
     const usuarios = await usuarioService.listar();
     res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ erro: 'Erro ao listar usuários', detalhes: error });
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro ao listar usuários',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
   }
 };
+
 
 // =======================
 // Cria um novo usuário
