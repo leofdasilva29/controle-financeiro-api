@@ -7,7 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Healthcheck {
-  id    Int    @id @default(autoincrement())
-  teste String @default("ok")
+model usuarios {
+  id                             Int      @id @default(autoincrement())
+  nome_completo                  String
+  email                          String   @unique
+  senha                          String
+  tipo_usuario                   String
+  permite_lancamento_retroativo Boolean  @default(false)
+  criado_em                      DateTime @default(now())
 }
