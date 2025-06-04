@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
   res.send('API Controle Financeiro Rodando ✅');
 });
 
-const port = parseInt(process.env.PORT || '3000', 10);
+const port = 3000;
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${port}`);
