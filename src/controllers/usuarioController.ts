@@ -1,64 +1,79 @@
 // =======================
-// ARQUIVO: usuarioController.ts
-// FINALIDADE: Controlar as rotas de requisição e resposta para o recurso "usuários"
+// ARQUIVO: usuarioRoutes.ts
+// FINALIDADE: Definição das rotas HTTP para o recurso de usuários com tratamento completo
 // =======================
 
-import { Request, Response } from 'express';
-import * as usuarioService from '../services/usuarioService';
+import { Router } from 'express';
+import * as controller from '../controllers/usuarioController';
+
+const router = Router();
 
 // =======================
-// Lista todos os usuários
+// Rota GET para listar todos os usuários
 // =======================
-export const listarUsuarios = async (req: Request, res: Response) => {
+router.get('/usuarios', async (req, res) => {
   try {
-    const usuarios = await usuarioService.listar();
-    res.json(usuarios);
+    await controller.listarUsuarios(req, res);
   } catch (error: any) {
     res.status(500).json({
-      erro: 'Erro ao listar usuários',
+      erro: 'Erro interno na rota GET /usuarios',
       detalhes: {
         mensagem: error.message || 'Erro desconhecido',
         stack: error.stack || null
       }
     });
   }
-};
-
+});
 
 // =======================
-// Cria um novo usuário
+// Rota POST para criar um novo usuário
 // =======================
-export const criarUsuario = async (req: Request, res: Response) => {
+router.post('/usuarios', async (req, res) => {
   try {
-    const novo = await usuarioService.criar(req.body);
-    res.status(201).json(novo);
-  } catch (error) {
-    res.status(400).json({ erro: 'Erro ao criar usuário', detalhes: error });
+    await controller.criarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota POST /usuarios',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
   }
-};
+});
 
 // =======================
-// Atualiza um usuário pelo ID
+// Rota PUT para atualizar um usuário existente
 // =======================
-export const atualizarUsuario = async (req: Request, res: Response) => {
+router.put('/usuarios/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    const atualizado = await usuarioService.atualizar(Number(id), req.body);
-    res.json(atualizado);
-  } catch (error) {
-    res.status(400).json({ erro: 'Erro ao atualizar usuário', detalhes: error });
+    await controller.atualizarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota PUT /usuarios/:id',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
   }
-};
+});
 
 // =======================
-// Deleta um usuário pelo ID
+// Rota DELETE para remover um usuário pelo ID
 // =======================
-export const deletarUsuario = async (req: Request, res: Response) => {
+router.delete('/usuarios/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    await usuarioService.deletar(Number(id));
-    res.status(204).send();
-  } catch (error) {
-    res.status(400).json({ erro: 'Erro ao deletar usuário', detalhes: error });
+    await controller.deletarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota DELETE /usuarios/:id',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
   }
-};
+});
+
+export default router;
