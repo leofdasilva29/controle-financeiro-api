@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model _healthcheck {
+model Healthcheck {
   id    Int    @id @default(autoincrement())
   teste String @default("ok")
 }
