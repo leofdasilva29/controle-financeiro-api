@@ -11,21 +11,21 @@ const router = Router();
 // =======================
 // Rota GET para listar todos os usuários
 // =======================
-router.get('/usuarios', controller.listarUsuarios);
+router.get('/', controller.listarUsuarios);
 
 // =======================
 // Rota POST para criar um novo usuário
 // =======================
-router.post('/usuarios', controller.criarUsuario);
+router.post('/', controller.criarUsuario);
 
 // =======================
 // Rota PUT para atualizar um usuário existente
 // =======================
-router.put('/usuarios/:id', controller.atualizarUsuario);
+router.put('/:id', controller.atualizarUsuario);
 
 // =======================
 // Rota DELETE para remover um usuário pelo ID
 // =======================
-router.delete('/usuarios/:id', controller.deletarUsuario);
+router.delete('/:id', controller.deletarUsuario);
 
 export default router;
