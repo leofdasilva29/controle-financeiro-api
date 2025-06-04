@@ -1,0 +1,25 @@
+### Listar usuários
+GET https://controle-financeiro-api-production-7787.up.railway.app/usuarios
+
+### Criar usuário
+POST https://controle-financeiro-api-production-7787.up.railway.app/usuarios
+Content-Type: application/json
+
+{
+  "nome_completo": "Léo Ferreira",
+  "email": "leo@email.com",
+  "senha": "123456",
+  "tipo_usuario": "admin",
+  "permite_lancamento_retroativo": true
+}
+
+### Atualizar usuário
+PUT https://controle-financeiro-api-production-7787.up.railway.app/usuarios/1
+Content-Type: application/json
+
+{
+  "nome_completo": "Léo Ferreira Atualizado"
+}
+
+### Deletar usuário
+DELETE https://controle-financeiro-api-production-7787.up.railway.app/usuarios/1
