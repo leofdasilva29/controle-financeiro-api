@@ -1,31 +1,84 @@
 // =======================
 // ARQUIVO: usuarioRoutes.ts
-// FINALIDADE: Definição das rotas HTTP para o recurso de usuários
+// FINALIDADE: Definição das rotas HTTP para o recurso de usuários com tratamento completo
 // =======================
 
 import { Router } from 'express';
-import * as controller from '../controllers/usuarioController';
+import {
+  listarUsuarios,
+  criarUsuario,
+  atualizarUsuario,
+  deletarUsuario
+} from '../controllers/usuarioController';
 
 const router = Router();
 
 // =======================
 // Rota GET para listar todos os usuários
 // =======================
-router.get('/', controller.listarUsuarios);
+router.get('/usuarios', async (req, res) => {
+  try {
+    await listarUsuarios(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota GET /usuarios',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
+  }
+});
 
 // =======================
 // Rota POST para criar um novo usuário
 // =======================
-router.post('/', controller.criarUsuario);
+router.post('/usuarios', async (req, res) => {
+  try {
+    await criarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota POST /usuarios',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
+  }
+});
 
 // =======================
 // Rota PUT para atualizar um usuário existente
 // =======================
-router.put('/:id', controller.atualizarUsuario);
+router.put('/usuarios/:id', async (req, res) => {
+  try {
+    await atualizarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota PUT /usuarios/:id',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
+  }
+});
 
 // =======================
 // Rota DELETE para remover um usuário pelo ID
 // =======================
-router.delete('/:id', controller.deletarUsuario);
+router.delete('/usuarios/:id', async (req, res) => {
+  try {
+    await deletarUsuario(req, res);
+  } catch (error: any) {
+    res.status(500).json({
+      erro: 'Erro interno na rota DELETE /usuarios/:id',
+      detalhes: {
+        mensagem: error.message || 'Erro desconhecido',
+        stack: error.stack || null
+      }
+    });
+  }
+});
 
 export default router;
