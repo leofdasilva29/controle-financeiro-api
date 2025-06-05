@@ -1,0 +1,413 @@
+// ========================================
+// Arquivo: prisma/schema.prisma
+// Descrição: Mapeamento completo do banco de dados PostgreSQL
+// Versão: 1.7
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// Tabela: usuarios
+// Descrição: Armazena os usuários do sistema
+// ========================================
+model usuarios {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                        String
+  email                       String    @unique
+  senha                       String
+  tipo_usuario                String    @default("comum")
+  criado_em                   DateTime  @default(now())
+  permite_lancamento_retroativo Boolean @default(false)
+  
+  // Relacionamentos
+  categorias         categorias[]
+  centros_custo      centros_custo[]
+  contas            contas[]
+  lancamentos       lancamentos[]
+  lembretes         lembretes[]
+  logs              logs[]
+  metas             metas[]
+  notificacoes      notificacoes[]
+  preferencias      preferencias_usuarios[]
+  projetos          projetos[]
+  recorrencias      recorrencias[]
+  tags              tags[]
+}
+
+// ========================================
+// Tabela: moedas
+// Descrição: Moedas disponíveis no sistema
+// ========================================
+model moedas {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo    String   @unique
+  nome      String
+  simbolo   String
+  padrao    Boolean  @default(false)
+  criado_em DateTime @default(now())
+  
+  // Relacionamentos
+  contas              contas[]
+  preferencias_usuarios preferencias_usuarios[]
+}
+
+// ========================================
+// Tabela: contas
+// Descrição: Contas bancárias e cartões
+// ========================================
+model contas {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id        String?   @db.Uuid
+  nome              String
+  tipo              String?
+  saldo_inicial     Decimal   @default(0)
+  criado_em         DateTime  @default(now())
+  moeda_id          String?   @db.Uuid
+  conta_pagadora_id String?   @db.Uuid
+  data_fechamento   DateTime? @db.Date
+  
+  // Relacionamentos
+  usuarios           usuarios? @relation(fields: [usuario_id], references: [id])
+  moedas             moedas?   @relation(fields: [moeda_id], references: [id])
+  conta_pagadora     contas?   @relation("ContaPagadora", fields: [conta_pagadora_id], references: [id])
+  contas_dependentes contas[]  @relation("ContaPagadora")
+  
+  faturas_cartao     faturas_cartao[]
+  lancamentos        lancamentos[]
+  provisoes_fatura   provisoes_fatura[]
+  recorrencias       recorrencias[]
+  transferencias_origem   transferencias[] @relation("ContaOrigem")
+  transferencias_destino  transferencias[] @relation("ContaDestino")
+}
+
+// ========================================
+// Tabela: categorias
+// Descrição: Categorias de receitas e despesas
+// ========================================
+model categorias {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String? @db.Uuid
+  nome       String
+  tipo       String
+  
+  // Relacionamentos
+  usuarios     usuarios? @relation(fields: [usuario_id], references: [id])
+  lancamentos  lancamentos[]
+  metas        metas[]
+  recorrencias recorrencias[]
+}
+
+// ========================================
+// Tabela: lancamentos
+// Descrição: Lançamentos financeiros
+// ========================================
+model lancamentos {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id            String?   @db.Uuid
+  conta_id              String?   @db.Uuid
+  categoria_id          String?   @db.Uuid
+  tipo                  String
+  valor                 Decimal
+  data_lancamento       DateTime  @db.Date
+  descricao             String?
+  recorrente            Boolean   @default(false)
+  parcela_atual         Int?
+  total_parcelas        Int?
+  criado_em             DateTime  @default(now())
+  recorrencia_id        String?   @db.Uuid
+  proximo_lancamento_id String?   @db.Uuid
+  copiado_de_id         String?   @db.Uuid
+  status_recorrencia    String    @default("original")
+  descricao_alteracao   String?
+  fatura_id             String?   @db.Uuid
+  status_lancamento     String    @default("previsto")
+  
+  // Relacionamentos
+  usuarios              usuarios?        @relation(fields: [usuario_id], references: [id])
+  contas                contas?          @relation(fields: [conta_id], references: [id])
+  categorias            categorias?      @relation(fields: [categoria_id], references: [id])
+  faturas_cartao        faturas_cartao?  @relation(fields: [fatura_id], references: [id])
+  recorrencias          recorrencias?    @relation(fields: [recorrencia_id], references: [id])
+  lancamento_copiado    lancamentos?     @relation("LancamentoCopiado", fields: [copiado_de_id], references: [id])
+  lancamento_proximo    lancamentos?     @relation("ProximoLancamento", fields: [proximo_lancamento_id], references: [id])
+  
+  copias                lancamentos[]    @relation("LancamentoCopiado")
+  lancamentos_anteriores lancamentos[]   @relation("ProximoLancamento")
+  anexos                anexos[]
+  lancamento_tags       lancamento_tags[]
+  lembretes             lembretes[]
+  recibos               recibos[]
+}
+
+// ========================================
+// Tabela: faturas_cartao
+// Descrição: Faturas mensais de cartões
+// ========================================
+model faturas_cartao {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conta_id        String?  @db.Uuid
+  mes             Int
+  ano             Int
+  data_fechamento DateTime @db.Date
+  data_vencimento DateTime @db.Date
+  pago            Boolean  @default(false)
+  valor_total     Decimal?
+  criado_em       DateTime @default(now())
+  
+  // Relacionamentos
+  contas           contas?            @relation(fields: [conta_id], references: [id])
+  lancamentos      lancamentos[]
+  provisoes_fatura provisoes_fatura[]
+}
+
+// ========================================
+// Tabela: tags
+// Descrição: Etiquetas para lançamentos
+// ========================================
+model tags {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String?  @db.Uuid
+  nome       String
+  cor        String?
+  criado_em  DateTime @default(now())
+  
+  // Relacionamentos
+  usuarios        usuarios?         @relation(fields: [usuario_id], references: [id])
+  lancamento_tags lancamento_tags[]
+}
+
+// ========================================
+// Tabela: lancamento_tags
+// Descrição: Relacionamento N:N entre lançamentos e tags
+// ========================================
+model lancamento_tags {
+  id            String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lancamento_id String? @db.Uuid
+  tag_id        String? @db.Uuid
+  
+  // Relacionamentos
+  lancamentos lancamentos? @relation(fields: [lancamento_id], references: [id])
+  tags        tags?        @relation(fields: [tag_id], references: [id])
+}
+
+// ========================================
+// Tabela: centros_custo
+// Descrição: Centros de custo para organização
+// ========================================
+model centros_custo {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String?  @db.Uuid
+  nome       String
+  descricao  String?
+  criado_em  DateTime @default(now())
+  
+  // Relacionamentos
+  usuarios usuarios? @relation(fields: [usuario_id], references: [id])
+}
+
+// ========================================
+// Tabela: projetos
+// Descrição: Projetos financeiros
+// ========================================
+model projetos {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String?   @db.Uuid
+  nome       String
+  descricao  String?
+  data_inicio DateTime? @db.Date
+  data_fim    DateTime? @db.Date
+  status      String    @default("ativo")
+  criado_em   DateTime  @default(now())
+  
+  // Relacionamentos
+  usuarios usuarios? @relation(fields: [usuario_id], references: [id])
+}
+
+// ========================================
+// Tabela: metas
+// Descrição: Metas financeiras mensais
+// ========================================
+model metas {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id   String?  @db.Uuid
+  categoria_id String?  @db.Uuid
+  tipo         String
+  valor_meta   Decimal
+  mes          Int
+  ano          Int
+  criado_em    DateTime @default(now())
+  
+  // Relacionamentos
+  usuarios   usuarios?   @relation(fields: [usuario_id], references: [id])
+  categorias categorias? @relation(fields: [categoria_id], references: [id])
+}
+
+// ========================================
+// Tabela: recorrencias
+// Descrição: Regras para lançamentos recorrentes
+// ========================================
+model recorrencias {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id           String?   @db.Uuid
+  conta_id             String?   @db.Uuid
+  categoria_id         String?   @db.Uuid
+  valor                Decimal
+  tipo                 String
+  descricao            String?
+  frequencia           String
+  proximo_lancamento   DateTime  @db.Date
+  total_repeticoes     Int?
+  repeticoes_realizadas Int      @default(0)
+  ativo                Boolean   @default(true)
+  criado_em            DateTime  @default(now())
+  
+  // Relacionamentos
+  usuarios     usuarios?     @relation(fields: [usuario_id], references: [id])
+  contas       contas?       @relation(fields: [conta_id], references: [id])
+  categorias   categorias?   @relation(fields: [categoria_id], references: [id])
+  lancamentos  lancamentos[]
+}
+
+// ========================================
+// Tabela: transferencias
+// Descrição: Transferências entre contas
+// ========================================
+model transferencias {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conta_origem        String?  @db.Uuid
+  conta_destino       String?  @db.Uuid
+  valor               Decimal
+  data_transferencia  DateTime @db.Date
+  descricao           String?
+  criado_em           DateTime @default(now())
+  
+  // Relacionamentos
+  conta_origem_rel  contas? @relation("ContaOrigem", fields: [conta_origem], references: [id])
+  conta_destino_rel contas? @relation("ContaDestino", fields: [conta_destino], references: [id])
+}
+
+// ========================================
+// Tabela: anexos
+// Descrição: Arquivos anexados aos lançamentos
+// ========================================
+model anexos {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lancamento_id String?  @db.Uuid
+  url           String
+  nome_original String?
+  tipo_arquivo  String?
+  criado_em     DateTime @default(now())
+  
+  // Relacionamentos
+  lancamentos lancamentos? @relation(fields: [lancamento_id], references: [id])
+}
+
+// ========================================
+// Tabela: lembretes
+// Descrição: Lembretes de vencimentos
+// ========================================
+model lembretes {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String?  @db.Uuid
+  lancamento_id String?  @db.Uuid
+  data_lembrete DateTime @db.Date
+  enviado       Boolean  @default(false)
+  criado_em     DateTime @default(now())
+  
+  // Relacionamentos
+  usuarios    usuarios?    @relation(fields: [usuario_id], references: [id])
+  lancamentos lancamentos? @relation(fields: [lancamento_id], references: [id])
+}
+
+// ========================================
+// Tabela: notificacoes
+// Descrição: Notificações enviadas aos usuários
+// ========================================
+model notificacoes {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id String?   @db.Uuid
+  titulo     String
+  mensagem   String?
+  canal      String    @default("email")
+  enviado    Boolean   @default(false)
+  data_envio DateTime?
+  criado_em  DateTime  @default(now())
+  
+  // Relacionamentos
+  usuarios usuarios? @relation(fields: [usuario_id], references: [id])
+}
+
+// ========================================
+// Tabela: recibos
+// Descrição: Recibos de lançamentos
+// ========================================
+model recibos {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lancamento_id String?  @db.Uuid
+  codigo_hash   String   @unique
+  data_emissao  DateTime @default(now())
+  
+  // Relacionamentos
+  lancamentos lancamentos? @relation(fields: [lancamento_id], references: [id])
+}
+
+// ========================================
+// Tabela: preferencias_usuarios
+// Descrição: Preferências individuais dos usuários
+// ========================================
+model preferencias_usuarios {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id       String?  @db.Uuid
+  moeda_padrao_id  String?  @db.Uuid
+  tema             String   @default("claro")
+  idioma           String   @default("pt-BR")
+  dashboard_padrao String?
+  criado_em        DateTime @default(now())
+  
+  // Relacionamentos
+  usuarios usuarios? @relation(fields: [usuario_id], references: [id])
+  moedas   moedas?   @relation(fields: [moeda_padrao_id], references: [id])
+}
+
+// ========================================
+// Tabela: provisoes_fatura
+// Descrição: Provisões de faturas de cartão
+// ========================================
+model provisoes_fatura {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fatura_id          String?  @db.Uuid
+  conta_pagadora_id  String?  @db.Uuid
+  valor_provisionado Decimal
+  data_provisao      DateTime @db.Date
+  tipo               String   @default("parcial")
+  observacao         String?
+  criado_em          DateTime @default(now())
+  
+  // Relacionamentos
+  faturas_cartao faturas_cartao? @relation(fields: [fatura_id], references: [id])
+  contas         contas?         @relation(fields: [conta_pagadora_id], references: [id])
+}
+
+// ========================================
+// Tabela: logs
+// Descrição: Registro de ações dos usuários
+// ========================================
+model logs {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String?  @db.Uuid
+  acao           String
+  tabela_afetada String?
+  registro_id    String?  @db.Uuid
+  data_hora      DateTime @default(now())
+  detalhes       Json?
+  
+  // Relacionamentos
+  usuarios usuarios? @relation(fields: [usuario_id], references: [id])
+}

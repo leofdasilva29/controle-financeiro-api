@@ -1,0 +1,41 @@
+# ========================================
+# Arquivo: .gitignore
+# Descrição: Arquivos que NÃO devem ser enviados ao GitHub
+# ========================================
+
+# Dependências do Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de ambiente (IMPORTANTE: nunca envie senhas!)
+.env
+.env.local
+.env.production
+
+# Arquivos do Prisma gerados automaticamente
+prisma/migrations/
+
+# Logs
+logs/
+*.log
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos do editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos temporários
+tmp/
+temp/
+.cache/
+
+# Build/compilação
+dist/
+build/

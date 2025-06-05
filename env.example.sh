@@ -1,0 +1,21 @@
+# ========================================
+# Arquivo: .env
+# Descrição: Variáveis de ambiente do projeto
+# IMPORTANTE: Renomeie este arquivo para .env e preencha com seus dados reais
+# ========================================
+
+# URL de conexão com o banco de dados PostgreSQL do Supabase
+# Formato: postgresql://[usuario]:[senha]@[host]:[porta]/[nome_do_banco]
+DATABASE_URL="postgresql://postgres:leofdasilva123@db.ueuavssontzyavbjezbv.supabase.co:5432/postgres"
+
+# Porta onde o servidor vai rodar (Railway define automaticamente)
+PORT=3000
+
+# Chave secreta para JWT (autenticação) - gere uma string aleatória forte
+JWT_SECRET="coloque_aqui_uma_string_aleatoria_bem_longa_e_segura_123456"
+
+# Ambiente de execução (development, production)
+NODE_ENV="production"
+
+# URL do front-end (para CORS) - depois você coloca a URL do Vercel
+FRONTEND_URL="https://seu-app.vercel.app"
