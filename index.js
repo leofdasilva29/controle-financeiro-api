@@ -13,11 +13,33 @@ const { PrismaClient } = require('@prisma/client'); // Cliente do banco de dados
 
 // Inicialização do Express e Prisma
 const app = express();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query', 'error', 'warn'], // Adiciona logs para debug
+});
 
 // Configurações do Express (Middlewares)
 app.use(cors()); // Permite acesso de qualquer origem (CORS)
 app.use(express.json()); // Permite que a API receba JSON no body das requisições
+
+// ========================================
+// TESTE DE CONEXÃO COM O BANCO
+// ========================================
+async function testeDatabaseConnection() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Conexão com o banco de dados estabelecida com sucesso!');
+    
+    // Testa uma query simples
+    const count = await prisma.usuarios.count();
+    console.log(`📊 Total de usuários no banco: ${count}`);
+  } catch (erro) {
+    console.error('❌ Erro ao conectar com o banco de dados:', erro);
+    console.error('Verifique sua DATABASE_URL e a conexão com o Supabase');
+  }
+}
+
+// Chama o teste de conexão ao iniciar
+testeDatabaseConnection();
 
 // ========================================
 // ROTA DE TESTE - Verifica se a API está online
@@ -26,9 +48,21 @@ app.get('/', (req, res) => {
   res.json({
     mensagem: '🚀 API de Controle Financeiro está online!',
     versao: '1.0.0',
-    status: 'OK'
+    status: 'OK',
+    endpoints: {
+      usuarios: '/usuarios',
+      categorias: '/categorias',
+      contas: '/contas',
+      moedas: '/moedas'
+    }
   });
 });
+
+// ========================================
+// IMPORTAÇÃO DAS ROTAS
+// ========================================
+// Por enquanto, vamos manter as rotas no mesmo arquivo
+// Depois organizaremos em arquivos separados
 
 // ========================================
 // ROTAS DE USUÁRIOS
@@ -37,6 +71,7 @@ app.get('/', (req, res) => {
 // GET /usuarios - Lista todos os usuários
 app.get('/usuarios', async (req, res) => {
   try {
+    console.log('Buscando usuários...');
     const usuarios = await prisma.usuarios.findMany({
       select: {
         id: true,
@@ -47,10 +82,20 @@ app.get('/usuarios', async (req, res) => {
         // Nota: nunca retornamos a senha por segurança
       }
     });
-    res.json(usuarios);
+    
+    console.log(`Encontrados ${usuarios.length} usuários`);
+    res.json({
+      sucesso: true,
+      total: usuarios.length,
+      dados: usuarios
+    });
   } catch (erro) {
-    console.error('Erro ao buscar usuários:', erro);
-    res.status(500).json({ erro: 'Erro ao buscar usuários' });
+    console.error('Erro detalhado ao buscar usuários:', erro);
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao buscar usuários',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -62,6 +107,7 @@ app.post('/usuarios', async (req, res) => {
     // Validação básica
     if (!nome || !email || !senha) {
       return res.status(400).json({ 
+        sucesso: false,
         erro: 'Nome, email e senha são obrigatórios' 
       });
     }
@@ -83,14 +129,52 @@ app.post('/usuarios', async (req, res) => {
       }
     });
 
-    res.status(201).json(novoUsuario);
+    res.status(201).json({
+      sucesso: true,
+      mensagem: 'Usuário criado com sucesso',
+      dados: novoUsuario
+    });
   } catch (erro) {
     console.error('Erro ao criar usuário:', erro);
     if (erro.code === 'P2002') {
-      res.status(400).json({ erro: 'Email já cadastrado' });
+      res.status(400).json({ 
+        sucesso: false,
+        erro: 'Email já cadastrado' 
+      });
     } else {
-      res.status(500).json({ erro: 'Erro ao criar usuário' });
+      res.status(500).json({ 
+        sucesso: false,
+        erro: 'Erro ao criar usuário',
+        detalhes: erro.message 
+      });
     }
+  }
+});
+
+// ========================================
+// ROTAS DE MOEDAS
+// ========================================
+
+// GET /moedas - Lista todas as moedas
+app.get('/moedas', async (req, res) => {
+  try {
+    const moedas = await prisma.moedas.findMany({
+      orderBy: {
+        padrao: 'desc' // Moeda padrão primeiro
+      }
+    });
+    res.json({
+      sucesso: true,
+      total: moedas.length,
+      dados: moedas
+    });
+  } catch (erro) {
+    console.error('Erro ao buscar moedas:', erro);
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao buscar moedas',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -106,10 +190,18 @@ app.get('/categorias', async (req, res) => {
         nome: 'asc'
       }
     });
-    res.json(categorias);
+    res.json({
+      sucesso: true,
+      total: categorias.length,
+      dados: categorias
+    });
   } catch (erro) {
     console.error('Erro ao buscar categorias:', erro);
-    res.status(500).json({ erro: 'Erro ao buscar categorias' });
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao buscar categorias',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -121,6 +213,7 @@ app.post('/categorias', async (req, res) => {
     // Validação
     if (!nome || !tipo || !usuario_id) {
       return res.status(400).json({ 
+        sucesso: false,
         erro: 'Nome, tipo e usuário são obrigatórios' 
       });
     }
@@ -128,6 +221,7 @@ app.post('/categorias', async (req, res) => {
     // Valida o tipo
     if (!['receita', 'despesa', 'transferencia'].includes(tipo)) {
       return res.status(400).json({ 
+        sucesso: false,
         erro: 'Tipo deve ser: receita, despesa ou transferencia' 
       });
     }
@@ -140,10 +234,18 @@ app.post('/categorias', async (req, res) => {
       }
     });
 
-    res.status(201).json(novaCategoria);
+    res.status(201).json({
+      sucesso: true,
+      mensagem: 'Categoria criada com sucesso',
+      dados: novaCategoria
+    });
   } catch (erro) {
     console.error('Erro ao criar categoria:', erro);
-    res.status(500).json({ erro: 'Erro ao criar categoria' });
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao criar categoria',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -162,10 +264,18 @@ app.get('/contas', async (req, res) => {
         nome: 'asc'
       }
     });
-    res.json(contas);
+    res.json({
+      sucesso: true,
+      total: contas.length,
+      dados: contas
+    });
   } catch (erro) {
     console.error('Erro ao buscar contas:', erro);
-    res.status(500).json({ erro: 'Erro ao buscar contas' });
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao buscar contas',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -177,6 +287,7 @@ app.post('/contas', async (req, res) => {
     // Validação
     if (!nome || !usuario_id) {
       return res.status(400).json({ 
+        sucesso: false,
         erro: 'Nome e usuário são obrigatórios' 
       });
     }
@@ -194,10 +305,18 @@ app.post('/contas', async (req, res) => {
       }
     });
 
-    res.status(201).json(novaConta);
+    res.status(201).json({
+      sucesso: true,
+      mensagem: 'Conta criada com sucesso',
+      dados: novaConta
+    });
   } catch (erro) {
     console.error('Erro ao criar conta:', erro);
-    res.status(500).json({ erro: 'Erro ao criar conta' });
+    res.status(500).json({ 
+      sucesso: false,
+      erro: 'Erro ao criar conta',
+      detalhes: erro.message 
+    });
   }
 });
 
@@ -206,6 +325,7 @@ app.post('/contas', async (req, res) => {
 // ========================================
 app.use((req, res) => {
   res.status(404).json({ 
+    sucesso: false,
     erro: 'Rota não encontrada',
     rota_solicitada: req.path 
   });
